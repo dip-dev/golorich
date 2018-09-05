@@ -1,0 +1,21 @@
+version: 2
+
+jobs:
+  build:
+    working_directory: /go/src/github.com/dip-dev/golorich
+    dokcer:
+      - image: circleci/golang:1.10
+    steps:
+      - checkout
+      - run
+          name: install libraries
+          command: |
+            go get github.com/hashicorp/logutils
+            go get -u github.com/golang/lint/golint
+      - run
+          name: test
+          command: |
+            (! gofmt -s -d . | grep '^')
+            golint -set_exit_status ./...
+            govet ./...
+            go test ./...
