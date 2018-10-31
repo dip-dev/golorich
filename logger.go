@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/hashicorp/logutils"
@@ -105,9 +106,11 @@ func (l *Logger) Errorln(v ...interface{}) {
 // Fatalf logs to the FATAL log in fmt.Printf manner.
 func (l *Logger) Fatalf(format string, v ...interface{}) {
 	l.Output(2, fmt.Sprint(fatalPrefix, fmt.Sprintf(format, v...)))
+	os.Exit(1)
 }
 
 // Fatalln logs to the FATAL log in fmt.Println manner.
 func (l *Logger) Fatalln(v ...interface{}) {
 	l.Output(2, fatalPrefix+fmt.Sprintln(v...))
+	os.Exit(1)
 }

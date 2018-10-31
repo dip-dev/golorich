@@ -11,11 +11,10 @@ jobs:
           name: install libraries
           command: |
             go get -t -d -v
-            go get -u github.com/golang/lint/golint
+            go get -u golang.org/x/lint/golint
       - run:
           name: test
           command: |
             (! gofmt -s -d . | grep '^')
             golint -set_exit_status ./...
-            go vet ./...
             go test ./...

@@ -2,7 +2,10 @@ package golorich_test
 
 import (
 	"bytes"
+	"io"
 	"log"
+	"os"
+	"os/exec"
 	"reflect"
 	"regexp"
 	"testing"
@@ -314,14 +317,14 @@ func TestLogger_Errorln(t *testing.T) {
 func TestLogger_Fatalf(t *testing.T) {
 	tests := []struct {
 		name   string
-		buf    *bytes.Buffer
+		out    io.Writer
 		format string
 		args   []interface{}
 		want   string
 	}{
 		{
 			name:   "success",
-			buf:    &bytes.Buffer{},
+			out:    os.Stdout,
 			format: "%s %s",
 			args:   []interface{}{"test", "message"},
 			want:   `^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2} \[FATAL\] test message\n$`,
@@ -330,14 +333,23 @@ func TestLogger_Fatalf(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := golorich.New(tt.buf, "", log.LstdFlags, golorich.Fatal)
-			logger.Fatalf(tt.format, tt.args...)
-			got := tt.buf.String()
-			if ok, err := regexp.MatchString(tt.want, got); err != nil {
+			logger := golorich.New(tt.out, "", log.LstdFlags, golorich.Fatal)
+			if os.Getenv("BE_FATAL") == "1" {
+				logger.Fatalf(tt.format, tt.args...)
+				return
+			}
+			cmd := exec.Command(os.Args[0], "-test.run=TestLogger_Fatalf")
+			cmd.Env = append(os.Environ(), "BE_FATAL=1")
+			got, err := cmd.Output()
+			if ok, err := regexp.MatchString(tt.want, string(got)); err != nil {
 				t.Fatalf("%v", err)
 			} else if !ok {
 				t.Errorf("not match pattern: want %s, but %s", tt.want, got)
 			}
+			if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+				return
+			}
+			t.Fatalf("process ran with err %v, want os.Exit(1)", err)
 		})
 	}
 }
@@ -345,13 +357,13 @@ func TestLogger_Fatalf(t *testing.T) {
 func TestLogger_Fatalln(t *testing.T) {
 	tests := []struct {
 		name string
-		buf  *bytes.Buffer
+		out  io.Writer
 		args []interface{}
 		want string
 	}{
 		{
 			name: "success",
-			buf:  &bytes.Buffer{},
+			out:  os.Stdout,
 			args: []interface{}{"test", "message"},
 			want: `^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2} \[FATAL\] test message\n$`,
 		},
@@ -359,14 +371,23 @@ func TestLogger_Fatalln(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := golorich.New(tt.buf, "", log.LstdFlags, golorich.Fatal)
-			logger.Fatalln(tt.args...)
-			got := tt.buf.String()
-			if ok, err := regexp.MatchString(tt.want, got); err != nil {
+			logger := golorich.New(tt.out, "", log.LstdFlags, golorich.Fatal)
+			if os.Getenv("BE_FATAL") == "1" {
+				logger.Fatalln(tt.args...)
+				return
+			}
+			cmd := exec.Command(os.Args[0], "-test.run=TestLogger_Fatalln")
+			cmd.Env = append(os.Environ(), "BE_FATAL=1")
+			got, err := cmd.Output()
+			if ok, err := regexp.MatchString(tt.want, string(got)); err != nil {
 				t.Fatalf("%v", err)
 			} else if !ok {
 				t.Errorf("not match pattern: want %s, but %s", tt.want, got)
 			}
+			if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+				return
+			}
+			t.Fatalf("process ran with err %v, want os.Exit(1)", err)
 		})
 	}
 }
